@@ -163,8 +163,8 @@ see detailed info in [Templates structure](#templates-structure) section.
 
 ### Build a Function
 >[!NOTE]
-> This step is optional, you can skip straight to [Deploying](deploy-a-function)
-> or [Running](run-a-function)
+> This step is optional, you can skip straight to [Deploying](#deploy-a-function)
+> or [Running](#run-a-function)
 > 1) If you don't need to do any extra setup. Deploy step already builds for you
 > 2) If you already have your own function image built.
 
