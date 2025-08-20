@@ -31,29 +31,35 @@ see how to [deploy](#deploy-a-function) your function.
 ## Prerequisites
 In order to use Functions, you will need a few things:
 
-### Download the `func` binary
+### Get the `func` binary
+
+#### Build from source
 You can clone our [GitHub repository](https://github.com/knative/func/) and
-build your binary from the source or download it straight from the
+build your binary from the source. You simply run 'make' in the root directory
+to obtain the 'func' binary.
+
+#### Download the binary
+Download the binary straight from the
 [release pages](https://github.com/knative/func/releases) under *Assets*.
 
 Alternatively, for your convenience, see if your OS and architecture can be
 found in the list below for an easy copy&paste and download our latest version.
 
-### Linux
+#### Linux
 
-#### amd64
+##### amd64
 ```bash
 curl -L -o /usr/local/bin/func https://github.com/knative/func/releases/latest/download/func_linux_amd64
 ```
 
-#### arm64
+##### arm64
 ```bash
 curl -L -o /usr/local/bin/func https://github.com/knative/func/releases/latest/download/func_linux_arm64
 ```
 
-### Windows
+#### Windows
 
-#### PowerShell
+##### PowerShell
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/knative/func/releases/latest/download/func_windows_amd64.exe" -OutFile <"C:\path\to\your\destination\func.exe">
 ```
@@ -66,15 +72,15 @@ curl -L -o <C:\path\to\your\destination\func.exe> "https://github.com/knative/fu
 > You need to change the part in <> to your desired destination
 > (don't include the "<>" symbols)
 
-### Mac (darwin OS)
+#### Mac (darwin OS)
 
-#### amd64
+##### amd64
 
 ```sh
 curl -L -o /usr/local/bin/func "https://github.com/knative/func/releases/latest/download/func_darwin_amd64"
 ```
 
-#### arm64
+##### arm64
 
 ```sh
 curl -L -o /usr/local/bin/func "https://github.com/knative/func/releases/latest/download/func_darwin_arm64"
@@ -105,7 +111,7 @@ containerize your applications. (*You can get this as a standalone tool*)
 #### Download local cluster runner (kind)
 Please refer to **kind**
 [installation page](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
-or download any other runner that you like.
+or download any other runner that you prefer.
 
 #### Download cli commands for k8s (kubectl)
 In order to interact with the objects in k8s, its recommended to get
@@ -156,10 +162,15 @@ root
 see detailed info in [Templates structure](#templates-structure) section.
 
 ### Build a Function
+>[!NOTE]
+> This step is optional, you can skip straight to [Deploying](deploy-a-function)
+> or [Running](run-a-function)
+> 1) If you don't need to do any extra setup. Deploy step already builds for you
+> 2) If you already have your own function image built.
 
 #### Using the Host Builder
 > [!WARNING]
-> Host builder is currently available for runtimes `go` and `python`
+> Host builder is currently available only for runtimes `go` and `python`
 
 > [!TIP]
 > We recommend using the host builder `--builder=host` when available
@@ -167,26 +178,25 @@ see detailed info in [Templates structure](#templates-structure) section.
 You build a function using the `func build` command. You can specify your desired
 builder (look below) or don't configure anything and use the default.
 
-If you want to `func run` your Function locally first, it's recommended to use
-`--container=false`
-
 #### Using Alternative Builders
 Alternative built-in builders are `pack` and `s2i` (for supported languages).
 The way to use them is simple. Just specify which one you want using the
 `--builder` flag (eg. `--builder=pack`)
+
+### Run a Function
+If you want to test your function and don't want to constantly deploy to a
+cluster you can use `func run` in order to run your function locally, in your
+CLI.
+
+You can use `--builder` flag to tell `func` which builder to use as well as
+`--address` to specify which address your function should be available at. For
+the complete list, please refer to `func run -h`.
 
 ### Deploy a Function
 > [!WARNING]
 > In order to deploy anything to a cluster, you will need to have one set up and
 > running along with at least [Knative-Serving](https://knative.dev/docs/serving/)
 > installed.
-
-You can skip the building step entirely and deploy straight after creating your
-function. (building is included in the `func deploy`).
-
-> [!NOTE]
-> You can skip the building step entirely and deploy straight after creating your
-> function. (building is included in the `deploy`).
 
 #### Local deployment
 You can deploy your local code (from your machine) to a cluster using a standard
@@ -196,10 +206,10 @@ deploy command. `func` will need to know a registry to use for the image
 ```bash
 func deploy --registry=myregistry.com/username
 ```
-If you already have your image you can also specify it via `--image` flag. Any
-standard image will work, either tagged, which will be built or specify a `sha`
-with your image to solely deploy it.
 
+If you already have your image you can also specify it via `--image` flag.
+Here you can also specify your `--builder` as well as many other things. Please
+refer to `func deploy -h` for the complete list.
 
 ```bash
 func deploy --image=registry.com/username/myimage@sha256:xxx
@@ -218,15 +228,19 @@ your cluster).
 
 You can simply add `--remote` to your `func deploy` command.
 
+We also have the option to deploy from a git repository. You can explore this
+via `--git*` flags. And please explore any other flags in `func deploy -h` to
+see what is available!
+
 ## Templates structure
  Directory structure is as follows: **root/[language]/[template]** where *root* is
  the github repository itself, *language* is the programming language used and
- *template* is the name of the template. Function is created from Git repo via
+ *template* is the name of the template. Function is created from repo via
  `--repository` flag when using `func create` command. More in
  [How-To-Use](#how-to-use) section.
 
 ```
-github.com/function-dev/templates <--[root]
+github.com/function-dev/templates <---[root]
 ├── go <------------------------------[language]
 │   ├── hello <-----------------------[template]
 │   │   └── <function source files>
