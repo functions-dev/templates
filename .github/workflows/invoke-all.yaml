@@ -146,14 +146,15 @@ jobs:
             exit 1
           fi
           # wait for run just in case
-          sleep 5
+          sleep 10
           ############################# FUNC INVOKE #############################
           echo "> FUNC INVOKE"
           MAX_RETRIES=5
           RETRY_COUNT=0
           SUCCESS=false
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo "Attempt $RETRY_COUNT of $MAX_RETRIES"
+            echo ">>> Attempt $RETRY_COUNT of $MAX_RETRIES for <<<"
+            echo "$(basename "$(dirname "$PWD")")/$(basename "$PWD")"
             echo "Invoking 'func invoke' with current PID $$"
             if f invoke --request-type=GET; then
               echo "'func invoke' succeeded."
@@ -162,7 +163,7 @@ jobs:
             else
               echo "'func invoke' failed."
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              sleep 5
+              sleep 10
             fi
           done
           kill $RUN_PID
