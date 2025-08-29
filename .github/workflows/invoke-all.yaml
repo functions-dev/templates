@@ -13,7 +13,7 @@ on:
       - main
 
 env:
-    FUNC_VERSION: 'knative-v1.19.0'
+    FUNC_VERSION: 'knative-v1.19.1'
 
 jobs:
   prepare:
@@ -48,7 +48,8 @@ jobs:
       ACTIONS_STEP_DEBUG: true
       language_paths: ${{needs.prepare.outputs.language_paths}}
       HEADREF: ${{github.head_ref}}
-      # TODO: UPDATE THIS IF HOST BUILDER IS ENABLED FOR MORE LANGUAGES
+      # TODO: UPDATE THIS IF HOST BUILDER IS ENABLED FOR MORE LANGUAGES SO WE
+      # DEFAULT TO THE HOST BUILDER
       HOST_ENABLED_LANGUAGES: '["go","python"]'
     steps:
     - name: Checkout code
@@ -69,15 +70,15 @@ jobs:
         # series of commands to build & invoke the Function (with specifics per language)
         # Might change this to <one "run" per language> scenario because then
         # I would just need to check the matrix language for which one to run
+        # and the number of supported languages is very stable. This would
+        # invoke an action for each template. Perhaps an overkill
 
         set -euo pipefail
 
-        builder="pack"
-        request_type="GET"
-        container=true
+        builder="pack" # default; sets host dynamically for enabled languages
         language=${{ matrix.language }}
 
-        ## DETERMINE IF HOST BUILDER SHOULD BE USED
+        #### DETERMINE IF HOST BUILDER SHOULD BE USED
         ## NOTE: HOST_ENABLED_LANGUAGES MUST BE UP TO DATE
         if echo '${{env.HOST_ENABLED_LANGUAGES}}' | jq -r ".[] | select(. == \"${{matrix.language}}\")" | grep -q .; then
           builder="host"
@@ -85,10 +86,6 @@ jobs:
 
         echo "Using language '$language'"
         echo "Using builder '$builder'"
-        if [[ "$builder" == "host" ]];then
-          container=false
-        fi
-        echo "Using container '$container'"
 
         # This takes the array of paths, wraps it in single quotes for jq, then
         # selects only the value that matches with language to get current
@@ -101,15 +98,19 @@ jobs:
         echo ">> url=$url"
 
         WORKDIR=$(mktemp -d)
-        cd $WORKDIR
+
+        # see current state of dir
+        echo "ls -la ${GITHUB_WORKSPACE}"
+        ls -la ${GITHUB_WORKSPACE}
+
+        # RUN FOR EACH TEMPLATE
         for template_dir_abs in $(ls -d $language_path*/); do
+          cd $WORKDIR # cd to root for each template to not create embedded dirs
           echo "template_dir_abs=$template_dir_abs"
-          echo "ls -la ${GITHUB_WORKSPACE}"
-          ls -la ${GITHUB_WORKSPACE}
           template=$(basename "$template_dir_abs")
 
           ############################# FUNC CREATE #############################
-          echo "> FUNC CREATE"
+          echo ">>> FUNC CREATE <<<"
 
           echo "f create $language-$template -r=$url -l=$language -t=$template"
           f create $language-$template -r "$url" -l "$language" -t "$template"
@@ -129,9 +130,12 @@ jobs:
           fi
 
           ########################## FUNC BUILD & RUN ##########################
-          echo "> FUNC BUILD & RUN"
+          echo ">>> FUNC BUILD <<<"
+          echo "FUNC_REGISTRY=quay.io/dfridric f build --builder=$builder"
           FUNC_REGISTRY=quay.io/dfridric f build --builder=$builder
-          f run --container=$container --build=false &
+          echo ">>> FUNC RUN <<<"
+          echo "f run --build=false &"
+          f run --build=false &
 
           RUN_PID=$!
 
@@ -158,12 +162,13 @@ jobs:
             else
               echo "'func invoke' failed."
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              sleep 2
+              sleep 5
             fi
           done
           kill $RUN_PID
           if [ "$SUCCESS" = true ]; then
             echo "all good"
+
           else
             echo "'func invoke' failed."
             exit 1
