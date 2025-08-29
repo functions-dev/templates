@@ -153,8 +153,7 @@ jobs:
           RETRY_COUNT=0
           SUCCESS=false
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo ">>> Attempt $RETRY_COUNT of $MAX_RETRIES for <<<"
-            echo "$(basename "$(dirname "$PWD")")/$(basename "$PWD")"
+            echo ">>> Attempt $RETRY_COUNT of $MAX_RETRIES for $(basename "$PWD") <<<"
             echo "Invoking 'func invoke' with current PID $$"
             if f invoke --request-type=GET; then
               echo "'func invoke' succeeded."
