@@ -83,7 +83,7 @@ For testing the MCP functionality, you can use the included client at `client/cl
 
 ```bash
 # run your mcp server locally
-func run --builder=host --container=false
+func run --builder=host
 
 # in different terminal: run mcp client
 python client/client.py

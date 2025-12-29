@@ -19,7 +19,7 @@ management, including configurable startup and shutdown hooks.
 func deploy --builder=host
 
 # Local development and testing
-func run --builder=host --container=false
+func run --builder=host
 ```
 
 ## Customization

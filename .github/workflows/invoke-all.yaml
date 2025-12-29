@@ -48,8 +48,8 @@ jobs:
       ACTIONS_STEP_DEBUG: true
       language_paths: ${{needs.prepare.outputs.language_paths}}
       HEADREF: ${{github.head_ref}}
-      # TODO: UPDATE THIS IF HOST BUILDER IS ENABLED FOR MORE LANGUAGES SO WE
-      # DEFAULT TO THE HOST BUILDER
+      # Host builder is currently the default for Go and Python.
+      # Update this list if host builder support is added for more languages.
       HOST_ENABLED_LANGUAGES: '["go","python"]'
     steps:
     - name: Checkout code
