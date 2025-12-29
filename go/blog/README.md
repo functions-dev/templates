@@ -36,20 +36,12 @@ hugo build --destination ../dist
 Now you can simply `func run` or `func deploy` with the host builder to either
 expose your Function locally or on your cluster respectively.
 
-Example of these commands (note that host builder is hidden behind a flag, you
-need to enable
-it first - this will become the default builder in the future)
+Example commands:
 ```bash
-export FUNC_ENABLE_HOST_BUILDER=1
-func run --container=false --builder=host
+func run --builder=host
 ```
-Note: We are running without a container because the host builder builds on the
-OS system
-without a docker containarization app (func bundles up your Function in a
-specific way as an archive file to make it into an image).
 
 ```bash
-export FUNC_ENABLE_HOST_BUILDER=1
 func deploy --builder=host
 ```
 

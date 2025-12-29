@@ -9,7 +9,7 @@ jobs:
       languages: ${{ steps.prep-matrix.outputs.languages }}
       language_paths: ${{ steps.prep-matrix.outputs.language_paths }}
     env:
-      FUNC_VERSION: "knative-v1.16.1"
+      FUNC_VERSION: "knative-v1.19.1"
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -65,5 +65,5 @@ jobs:
           template=$(basename "$template_dir_abs")
           echo "f create $language-$template -r=$url -l=$language -t=$template"
           f create $language-$template -r "$url" -l "$language" -t "$template"
-          #FUNC_ENABLE_HOST_BUILDER=1 FUNC_BUILDER=host FUNC_CONTAINER=false FUNC_REGISTRY=docker.io/4141gauron3268 f
+          #FUNC_REGISTRY=quay.io/dfridric f build --builder=host
         done
