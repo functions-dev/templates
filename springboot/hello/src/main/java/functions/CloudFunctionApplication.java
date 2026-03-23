@@ -16,6 +16,6 @@ public class CloudFunctionApplication {
 
   @Bean
   public Function<Message<String>, String> echo() {
-    return inputMessage -> "Hello Springboot World!";
+    return inputMessage -> "{\"message\":\"Hello Springboot World!\"}";
   }
 }

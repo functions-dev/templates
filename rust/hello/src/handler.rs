@@ -6,7 +6,9 @@ use log::info;
 pub async fn index(req: HttpRequest, config: Data<HandlerConfig>) -> HttpResponse {
     info!("{:#?}", req);
     if req.method() == Method::GET || req.method() == Method::POST{
-        HttpResponse::Ok().body(format!("{}\n",config.response))
+        HttpResponse::Ok()
+            .content_type("application/json")
+            .body(format!("{{\"message\":\"{}\"}}", config.response))
     } else {
         HttpResponse::Ok().body("Unknown method\n")
     }
@@ -27,7 +29,7 @@ mod tests {
         let resp = index(req, config()).await;
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
-            &Bytes::from("Hello Rust World!\n"),
+            &Bytes::from("{\"message\":\"Hello Rust World!\"}"),
             to_bytes(resp.into_body()).await.unwrap().as_ref()
         );
     }
@@ -38,7 +40,7 @@ mod tests {
         let resp = index(req, config()).await;
         assert!(resp.status().is_success());
         assert_eq!(
-            &Bytes::from("Hello Rust World!\n"),
+            &Bytes::from("{\"message\":\"Hello Rust World!\"}"),
             to_bytes(resp.into_body()).await.unwrap().as_ref()
         );
     }

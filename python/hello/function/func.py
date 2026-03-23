@@ -8,7 +8,6 @@ def new():
     """
     return Function()
 
-
 class Function:
     def __init__(self):
         """ The init method is an optional method where initialization can be
@@ -22,17 +21,16 @@ class Function:
 
         logging.info("OK: Request Received")
 
-        # echo the request to the calling client
         await send({
             'type': 'http.response.start',
             'status': 200,
             'headers': [
-                [b'content-type', b'text/plain'],
+                [b'content-type', b'application/json'],
             ],
         })
         await send({
             'type': 'http.response.body',
-            'body': 'Hello Python World!'.encode(),
+            'body': '{"message":"Hello Python World!"}'.encode(),
         })
 
     def start(self, cfg):
