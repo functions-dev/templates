@@ -18,10 +18,24 @@ class Function:
 
     async def handle(self, scope, receive, send):
         """ Handle all HTTP requests to this Function other than readiness
-        and liveness probes. Echoes the query string back to the caller."""
+        and liveness probes. Echoes the query string on GET or the request
+        body on POST."""
 
-        query_string = scope.get('query_string', b'').decode('utf-8')
-        logging.info(f"Echoing query string: {query_string}")
+        method = scope.get('method', 'GET')
+
+        if method == 'POST':
+            body = b''
+            while True:
+                message = await receive()
+                body += message.get('body', b'')
+                if not message.get('more_body', False):
+                    break
+            response_body = body
+            logging.info(f"Echoing request body: {response_body.decode('utf-8')}")
+        else:
+            query_string = scope.get('query_string', b'').decode('utf-8')
+            response_body = query_string.encode()
+            logging.info(f"Echoing query string: {query_string}")
 
         await send({
             'type': 'http.response.start',
@@ -32,7 +46,7 @@ class Function:
         })
         await send({
             'type': 'http.response.body',
-            'body': query_string.encode(),
+            'body': response_body,
         })
 
     def start(self, cfg):
