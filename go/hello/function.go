@@ -1,6 +1,7 @@
 package function
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -17,6 +18,7 @@ func New() *MyFunction {
 
 // Handle an HTTP Request.
 func (f *MyFunction) Handle(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("Received a request\n")      //printed on server
-	fmt.Fprint(w, "Hello Go World!") //send to client
+	fmt.Print("Received a request\n") //printed on server
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Hello Go World!"})
 }

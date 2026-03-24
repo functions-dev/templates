@@ -19,9 +19,9 @@ const handle = async (context, body) => {
   console.log("Recieved request!") // printed on server
   // If the request is an HTTP GET/POST
   if (context.method === 'POST' || context.method === 'GET'){
-    return { statusMessage: "Hello Node World!"} // send to client
+    return { body: { message: "Hello Node World!" } } // send to client
   } else {
-    return { statusCode: 405, statusMessage: 'Method not allowed' };
+    return { statusCode: 405, body: 'Method not allowed' };
   }
 }
 

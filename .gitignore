@@ -1,1 +1,10 @@
 __pycache__
+.pytest_cache
+node_modules
+.venv
+# rust build artifacts
+target
+# typescript build output from npm test
+build
+# make test output
+test-results.log

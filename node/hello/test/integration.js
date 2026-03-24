@@ -15,12 +15,12 @@ test('Integration: handles an HTTP GET', t => {
   start(func).then(server => {
     t.plan(2);
     request(server)
-      .get('/?name=tiger')
+      .get('/')
       .expect(200)
       .expect('Content-Type', /json/)
       .end((err, res) => {
         t.error(err, 'No error');
-        t.deepEqual(res.body, { query: { name: 'tiger' } });
+        t.deepEqual(res.body, { message: 'Hello Node World!' });
         t.end();
         server.close();
       });
@@ -32,12 +32,11 @@ test('Integration: handles an HTTP POST', t => {
     t.plan(2);
     request(server)
       .post('/')
-      .send({ name: 'tiger' })
       .expect(200)
       .expect('Content-Type', /json/)
       .end((err, res) => {
         t.error(err, 'No error');
-        t.deepEqual(res.body, { name: 'tiger' });
+        t.deepEqual(res.body, { message: 'Hello Node World!' });
         t.end();
         server.close();
       });
@@ -49,7 +48,6 @@ test('Integration: responds with error code if neither GET or POST', t => {
     t.plan(1);
     request(server)
       .put('/')
-      .send({ name: 'tiger' })
       .expect(200)
       .expect('Content-Type', /json/)
       .end((err, res) => {

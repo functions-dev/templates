@@ -33,6 +33,6 @@ public class EchoCaseFunctionTest {
     ResponseEntity<String> response = this.rest.exchange(request,String.class);
     // assert status code and return value
     assertThat(response.getStatusCode().value(), equalTo(200));
-    assertThat(response.getBody(), containsString("Hello Springboot World!"));
+    assertThat(response.getBody(), containsString("{\"message\":\"Hello Springboot World!\"}"));
   }
 }

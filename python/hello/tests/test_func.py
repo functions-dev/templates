@@ -5,14 +5,13 @@ callable function) returns 200 OK for a simple HTTP GET.
 import pytest
 from function import new
 
-
 @pytest.mark.asyncio
 async def test_function_handle():
     f = new()  # Instantiate Function to Test
 
     sent_ok = False
     sent_headers = False
-    sent_body = False
+    sent_body = None
 
     # Mock Send
     async def send(message):
@@ -27,7 +26,7 @@ async def test_function_handle():
             sent_headers = True
 
         if message.get('type') == 'http.response.body':
-            sent_body = True
+            sent_body = message.get('body')
 
     # Invoke the Function
     await f.handle({}, {}, send)
@@ -35,4 +34,4 @@ async def test_function_handle():
     # Assert send was called
     assert sent_ok, "Function did not send a 200 OK"
     assert sent_headers, "Function did not send headers"
-    assert sent_body, "Function did not send a body"
+    assert sent_body == b'{"message":"Hello Python World!"}', f"Unexpected body: {sent_body}"
