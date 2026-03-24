@@ -1,4 +1,4 @@
-.PHONY: test test-go test-node test-python test-quarkus test-rust test-springboot test-typescript test-ci invoke-ci
+.PHONY: test test-go test-node test-python test-quarkus test-rust test-springboot test-typescript
 
 LOG := test-results.log
 START_TIME := $(shell date +%s%3N)
