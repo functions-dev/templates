@@ -1,8 +1,11 @@
 title = "Functions Go Blog"
-theme = "not-much"
 languageCode = "en-us"
 baseURL = "https://example.org/"
 copyright = "Sample custom notice © {year}"
+
+[module]
+  [[module.imports]]
+    path = "github.com/gauron99/hugo-theme-minimal-dark"
 
 [markup]
   [markup.highlight]
