@@ -12,7 +12,8 @@ dependencies = [
   "mcp",
   "ollama",
   "requests",
-  "chromadb"
+  "chromadb",
+  "tokenizers"
 ]
 authors = [
   { name="Your Name", email="you@example.com"},
