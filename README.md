@@ -253,6 +253,17 @@ github.com/function-dev/templates <---[root]
 ├── ...
 ```
 
+## E2E Tests
+
+Templates that require external services (e.g. Ollama) have self-contained e2e
+tests in `.testing/<language>/<template>/`.
+
+```bash
+make e2e                                          # run all e2e tests
+make e2e ARGS="python/mcp-ollama-rag"             # run a specific test
+make e2e ARGS="--verbose"                         # run all with full output
+```
+
 # Contact
 You can contact us on CNCF Slack
 [knative-functions](https://cloud-native.slack.com/archives/C04LKEZUXEE) channel

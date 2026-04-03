@@ -1,4 +1,4 @@
-.PHONY: test test-go test-node test-python test-quarkus test-rust test-springboot test-typescript
+.PHONY: test test-go test-node test-python test-quarkus test-rust test-springboot test-typescript e2e
 
 LOG := test-results.log
 START_TIME := $(shell date +%s%3N)
@@ -57,4 +57,7 @@ summary:
 	printf "\033[32m$$passed passed\033[0m, \033[31m$$failed failed\033[0m, \033[33m$$skipped skipped\033[0m in %d.%03ds\n" "$$((ms/1000))" "$$((ms%1000))"; \
 	echo "Full log: $(LOG)"; \
 	if [ "$$failed" -gt 0 ]; then echo ""; echo "=== Failed ==="; grep "^FAIL" $(LOG); exit 1; fi
+
+e2e:
+	@./.testing/run-e2e.sh $(ARGS)
 
