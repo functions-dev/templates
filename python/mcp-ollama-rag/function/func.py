@@ -2,27 +2,24 @@
 
 # Function as an MCP Server implementation
 import logging
+import uuid
 
 from mcp.server.fastmcp import FastMCP
 import ollama
 import asyncio
 import chromadb
-import requests
+
+from .parser import resolve_input, chunk_text
+
+# Silence noisy library loggers
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("mcp").setLevel(logging.WARNING)
 
 def new():
-    """ New is the only method that must be implemented by a Function.
+    """New is the only method that must be implemented by a Function.
     The instance returned can be of any name.
     """
     return Function()
-
-# Accepts any url link which points to a raw data (*.md/text files etc.)
-# example: https://raw.githubusercontent.com/knative/func/main/docs/function-templates/python.md
-def get_raw_content(url: str) -> str:
-    """ retrieve contents of github raw url as a text """
-    response = requests.get(url)
-    response.raise_for_status() # errors if bad response
-    print(f"fetch '{url}' - ok")
-    return response.text
 
 class MCPServer:
     """
@@ -39,16 +36,18 @@ class MCPServer:
 
         self.client = ollama.Client()
 
-        #init database stuff
+        # init vector database
         self.dbClient = chromadb.Client()
-        self.collection = self.dbClient.create_collection(name="my_collection")
+        self.collection = self.dbClient.get_or_create_collection(
+            name="my_collection"
+        )
         # default embedding model
         self.embedding_model = "mxbai-embed-large"
-        # call this after self.embedding_model assignment, so its defined
         self._register_tools()
 
     def _register_tools(self):
         """Register MCP tools."""
+
         @self.mcp.tool()
         def list_models():
             """List all models currently available on the Ollama server"""
@@ -56,52 +55,48 @@ class MCPServer:
                 models = self.client.list()
             except Exception as e:
                 return f"Oops, failed to list models because: {str(e)}"
-            #return [model['name'] for model in models['models']]
             return [model for model in models]
 
         default_embedding_model = self.embedding_model
+
         @self.mcp.tool()
-        def embed_document(data:list[str],model:str = default_embedding_model) -> str:
+        def embed_document(
+            data: list[str], model: str = default_embedding_model
+        ) -> str:
             """
             RAG (Retrieval-augmented generation) tool.
-            Embeds documents provided in data.
-            Arguments:
-            - data: expected to be of type str|list.
-            - model: embedding model to use, examples below.
+            Embeds documents provided in data. Each item can be a URL
+            (fetched automatically) or a raw text string. Documents are
+            chunked to fit the embedding model's context window.
 
-            # example embedding models:
-            # mxbai-embed-large - 334M *default
-            # nomic-embed-text - 137M
-            # all-minilm - 23M
+            Args:
+                data: List of URLs or text strings to embed.
+                model: Embedding model to use. Example:
+                    - mxbai-embed-large - default
             """
-            count = 0
+            all_chunks = []
+            for item in data:
+                content = resolve_input(item)
+                chunks = chunk_text(content)
+                all_chunks.extend(chunks)
+                label = item[:60] + "..." if len(item) > 60 else item
+                print(f"  Chunked '{label}' into {len(chunks)} chunks", flush=True)
 
-            ############ TODO -- import im a separate file
-            # documents generator
-            #documents_gen = parse_data_generator(data)
-            #### 1) GENERATE
-            # generate vector embeddings via embedding model
-            #for i, d in enumerate(documents_gen):
-            #    response = ollama.embed(model=model,input=d)
-            #    embeddings = response["embeddings"]
-            #    self.collection.add(
-            #            ids=[str(i)],
-            #            embeddings=embeddings,
-            #            documents=[d]
-            #            )
-            #    count += 1
+            # Batch embed all chunks in one call for performance
+            print(f"  Embedding {len(all_chunks)} chunks...", flush=True)
+            response = ollama.embed(model=model, input=all_chunks)
+            ids = [str(uuid.uuid4()) for _ in all_chunks]
+            self.collection.add(
+                ids=ids,
+                embeddings=response["embeddings"],
+                documents=all_chunks,
+            )
+            print("  Done.", flush=True)
 
-            # for simplicity (until the above is resolved, this accecpts only URLs)
-            for i, d in enumerate(data):
-                response = ollama.embed(model=model,input=get_raw_content(d))
-                embeddings = response["embeddings"]
-                self.collection.add(
-                        ids=[str(i)],
-                        embeddings=embeddings,
-                        documents=[d]
-                        )
-                count += 1
-            return f"ok - Embedded {count} documents"
+            return (
+                f"ok - Embedded {len(data)} document(s) "
+                f"as {len(all_chunks)} chunks"
+            )
 
         @self.mcp.tool()
         def pull_model(model: str) -> str:
@@ -113,42 +108,42 @@ class MCPServer:
             return f"Success! model {model} is available"
 
         @self.mcp.tool()
-        def call_model(prompt: str,
-                       model: str = "llama3.2:3b",
-                       embed_model: str = self.embedding_model) -> str:
-            """Send a prompt to a model being served on ollama server"""
-            #### 2) RETRIEVE
-            # we embed the prompt but dont save it into db, then we retrieve
-            # the most relevant document (most similar vectors)
+        def call_model(
+            prompt: str,
+            model: str = "llama3.2:3b",
+            embed_model: str = self.embedding_model,
+        ) -> str:
+            """Send a prompt to a model being served on ollama server.
+            Uses RAG to find the most relevant embedded documents and
+            includes them as context for the response."""
             try:
-                response = ollama.embed(
-                        model=embed_model,
-                        input=prompt
-                        )
+                # Embed the prompt for similarity search
+                response = ollama.embed(model=embed_model, input=prompt)
                 results = self.collection.query(
-                        query_embeddings=response["embeddings"],
-                        n_results=1
-                        )
-                data = results['documents'][0][0]
+                    query_embeddings=response["embeddings"],
+                    n_results=3,
+                )
+                context = "\n\n".join(results["documents"][0])
 
-            #### 3) GENERATE
-            # generate answer given a combination of prompt and data retrieved
                 output = ollama.generate(
-                        model=model,
-                        prompt=f'Using data: {data}, respond to prompt: {prompt}'
-                        )
-                print(output)
+                    model=model,
+                    prompt=(
+                        f"Using the following context:\n{context}\n\n"
+                        f"Respond to: {prompt}"
+                    ),
+                )
             except Exception as e:
                 return f"Error occurred during calling the model: {str(e)}"
-            return output['response']
+            return output["response"]
 
     async def handle(self, scope, receive, send):
         """Handle ASGI requests - both lifespan and HTTP."""
         await self._app(scope, receive, send)
 
+
 class Function:
     def __init__(self):
-        """ The init method is an optional method where initialization can be
+        """The init method is an optional method where initialization can be
         performed. See the start method for a startup hook which includes
         configuration.
         """
@@ -166,7 +161,7 @@ class Function:
             await self._initialize_mcp()
 
         # Route MCP requests
-        if scope['path'].startswith('/mcp'):
+        if scope.get("path", "").startswith("/mcp"):
             await self.mcp_server.handle(scope, receive, send)
             return
 
@@ -175,26 +170,28 @@ class Function:
 
     async def _initialize_mcp(self):
         """Initialize the MCP server by sending lifespan startup event."""
-        lifespan_scope = {'type': 'lifespan', 'asgi': {'version': '3.0'}}
+        lifespan_scope = {"type": "lifespan", "asgi": {"version": "3.0"}}
         startup_sent = False
 
         async def lifespan_receive():
             nonlocal startup_sent
             if not startup_sent:
                 startup_sent = True
-                return {'type': 'lifespan.startup'}
+                return {"type": "lifespan.startup"}
             await asyncio.Event().wait()  # Wait forever for shutdown
 
         async def lifespan_send(message):
-            if message['type'] == 'lifespan.startup.complete':
+            if message["type"] == "lifespan.startup.complete":
                 self._mcp_initialized = True
-            elif message['type'] == 'lifespan.startup.failed':
+            elif message["type"] == "lifespan.startup.failed":
                 logging.error(f"MCP startup failed: {message}")
 
         # Start lifespan in background
-        asyncio.create_task(self.mcp_server.handle(
-            lifespan_scope, lifespan_receive, lifespan_send
-        ))
+        asyncio.create_task(
+            self.mcp_server.handle(
+                lifespan_scope, lifespan_receive, lifespan_send
+            )
+        )
 
         # Brief wait for startup completion
         await asyncio.sleep(0.1)
@@ -204,15 +201,19 @@ class Function:
         Send default OK response.
         This is for your non MCP requests if desired.
         """
-        await send({
-            'type': 'http.response.start',
-            'status': 200,
-            'headers': [[b'content-type', b'text/plain']],
-        })
-        await send({
-            'type': 'http.response.body',
-            'body': b'OK',
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [[b"content-type", b"text/plain"]],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": b"OK",
+            }
+        )
 
     def start(self, cfg):
         logging.info("Function starting")

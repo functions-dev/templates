@@ -22,11 +22,12 @@ components:
 Function)
 - **MCPServer Class**: FastMCP-based server implementing HTTP-streamable MCP
 protocol
-- **MCP Tools**: Three primary tools for Ollama interaction:
+- **MCP Tools**: Four tools for Ollama interaction:
   - `list_models`: Enumerate available models on the Ollama server
   - `pull_model`: Download and install new models
-  - `call_model`: Send prompts to models and receive responses
-  - `rag_document`: RAG a document - accepts urls or text (strings)
+  - `embed_document`: Embed documents for RAG - accepts URLs or text strings,
+    automatically chunks to fit the embedding model's context window
+  - `call_model`: Send prompts to models with RAG context and receive responses
 
 
 ## Setup
@@ -42,7 +43,7 @@ protocol
     ```bash
 
     # optionally setup venv
-    pythom -m venv venv
+    python -m venv venv
     source venv/bin/activate
 
     # and install deps
@@ -57,8 +58,9 @@ protocol
     # Start Ollama service (in different terminal/ in bg)
     ollama serve
 
-    # Pull a model (optional, can be done via MCP tool)
+    # Pull models
     ollama pull llama3.2:3b
+    ollama pull mxbai-embed-large
     ```
 
 Now you have a running Ollama Server
@@ -83,7 +85,7 @@ ollama server and call the (now) specialized inference model with prompts.
 
 Now you've connected via MCP protocol to the running function, using an MCP client
 which has embedded a document into vector space for RAG tooling and prompted the
-model which can use the embeddings to answer your question (hopefuly) in a more
+model which can use the embeddings to answer your question (hopefully) in a more
 sophisticated manner.
 
 ### Deployment to cluster (not tested)
@@ -109,3 +111,6 @@ or portforwarding etc.
 - Verify model availability with `ollama list`
 - Confirm function is running on expected port (default: 8080)
 
+**HuggingFace rate limits:**
+The tokenizer for document chunking is downloaded from HuggingFace Hub on first
+use. If you hit rate limits, log in with `huggingface-cli login`.

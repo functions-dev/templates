@@ -1,12 +1,6 @@
 import asyncio
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-import json
-
-from mcp.types import CallToolResult
-
-def unload_list_models(models: CallToolResult) -> list[str]:
-    return [json.loads(item.text)["model"] for item in models.content if item.text.strip().startswith('{')] #pyright: ignore
 
 async def main():
     # check your running Function MCP Server, it will output where its available
@@ -15,12 +9,12 @@ async def main():
         read_stream,write_stream = streams[0],streams[1]
 
         async with ClientSession(read_stream,write_stream) as sess:
-            print("Initializing connection...",end="")
-            await sess.initialize()
+            print("Initializing connection...", end="", flush=True)
+            _ = await sess.initialize()
             print("done!\n")
 
-
             # embed some documents
+            print("Embedding documents (this may take a moment)...", flush=True)
             embed = await sess.call_tool(
                 name="embed_document",
                 arguments={
@@ -30,17 +24,17 @@ async def main():
                         ],
                     }
                 )
-            print(embed.content[0].text) # pyright: ignore[reportAttributeAccessIssue]
+            print(embed.content[0].text)  # pyright: ignore[reportAttributeAccessIssue]
             print("-"*60)
 
             # prompt the inference model
+            prompt = "What actually is a Knative Function?"
+            print(f"Querying: \"{prompt}\"", flush=True)
             resp = await sess.call_tool(
                 name="call_model",
-                arguments={
-                    "prompt": "What actually is a Knative Function?",
-                }
+                arguments={"prompt": prompt},
             )
-            print(resp.content[0].text)
+            print(resp.content[0].text) # pyright: ignore[reportAttributeAccessIssue]
 
 if __name__ == "__main__":
     asyncio.run(main())
