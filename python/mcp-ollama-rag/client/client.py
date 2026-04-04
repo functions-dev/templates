@@ -1,11 +1,11 @@
 import asyncio
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 async def main():
     # check your running Function MCP Server, it will output where its available
     # at during initialization.
-    async with streamablehttp_client("http://localhost:8080/mcp") as streams:
+    async with streamable_http_client("http://localhost:8080/mcp") as streams:
         read_stream,write_stream = streams[0],streams[1]
 
         async with ClientSession(read_stream,write_stream) as sess:
