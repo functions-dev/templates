@@ -1,0 +1,28 @@
+[project]
+name = "function"
+description = "Keycloak-authenticated HTTP function"
+version = "0.1.0"
+requires-python = ">=3.9"
+readme = "README.md"
+license = "MIT"
+dependencies = [
+  "PyJWT[crypto]",
+]
+authors = [
+  { name = "Your Name", email = "you@example.com" },
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-asyncio",
+  "cryptography",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"

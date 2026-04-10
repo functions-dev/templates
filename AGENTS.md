@@ -50,6 +50,7 @@ Python-specific:
 | `python/mcp-ollama` | Exposes Ollama LLM as MCP tools (list/pull/call models). Needs Ollama. |
 | `python/mcp-ollama-rag` | RAG via MCP — combines Ollama with Chroma vector DB for document Q&A. Needs Ollama. |
 | `python/ollama-client` | HTTP wrapper that forwards prompts to a local Ollama server. Needs Ollama. |
+| `python/keycloak-auth` | Validates Keycloak JWT Bearer tokens via OIDC/JWKS. Protects endpoints with auth. |
 | `python/llamacpp` | Loads a Granite code model via llama.cpp for local text generation. |
 
 For contributing to this repo, see [CONTRIBUTING.md](CONTRIBUTING.md).
