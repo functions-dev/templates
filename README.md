@@ -1,4 +1,5 @@
-[![Run & Invoke](https://github.com/functions-dev/templates/actions/workflows/invoke-all.yaml/badge.svg)](https://github.com/functions-dev/templates/actions/workflows/invoke-all.yaml)
+[![CI](https://github.com/functions-dev/templates/actions/workflows/ci.yaml/badge.svg)](https://github.com/functions-dev/templates/actions/workflows/ci.yaml)
+[![Nightly](https://github.com/functions-dev/templates/actions/workflows/nightly.yaml/badge.svg)](https://github.com/functions-dev/templates/actions/workflows/nightly.yaml)
 [![Template Tests](https://github.com/functions-dev/templates/actions/workflows/test-templates.yaml/badge.svg)](https://github.com/functions-dev/templates/actions/workflows/test-templates.yaml)
 [![License](https://img.shields.io/github/license/functions-dev/templates)](https://github.com/functions-dev/templates/blob/main/LICENSE)
 
