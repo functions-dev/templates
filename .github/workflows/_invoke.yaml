@@ -1,20 +1,11 @@
 name: Invoke All Functions
 
 on:
-  workflow_dispatch:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    paths-ignore:
-      - '.github/**'
-  push:
-    branches:
-      - main
-
-env:
-    FUNC_VERSION: 'knative-v1.19.1'
+  workflow_call:
+    inputs:
+      func-version:
+        required: true
+        type: string
 
 jobs:
   prepare:
@@ -32,9 +23,7 @@ jobs:
         ## NOTE: ls -d returns absolute path
         ## GITHUB_WORKSPACE is the root directory
         language_paths="$(ls -d ${GITHUB_WORKSPACE}/*/ | jq -R -s 'split("\n")[:-1]')"
-
         languages=$(find . -maxdepth 1 -type d -not -name ".*" -exec basename {} \; | jq -R -s -c 'split("\n")'[:-1])
-        # set output
         echo language_paths=$language_paths >> $GITHUB_OUTPUT
         echo languages=$languages >> $GITHUB_OUTPUT
 
@@ -46,9 +35,8 @@ jobs:
       matrix:
         language: ${{ fromJSON(needs.prepare.outputs.languages) }}
     env:
-      ACTIONS_STEP_DEBUG: true
-      language_paths: ${{needs.prepare.outputs.language_paths}}
-      HEADREF: ${{github.head_ref}}
+      language_paths: ${{ needs.prepare.outputs.language_paths }}
+      HEADREF: ${{ github.head_ref || github.ref_name }}
       # Host builder is currently the default for Go and Python.
       # Update this list if host builder support is added for more languages.
       HOST_ENABLED_LANGUAGES: '["go","python"]'
@@ -57,71 +45,56 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install func
-      uses: gauron99/knative-func-action@main
+      uses: functions-dev/action@main
       with:
-        version: ${{ env.FUNC_VERSION }}
+        version: ${{ inputs.func-version }}
         name: f
+
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v3
       with:
         hugo-version: '0.142.0'
         extended: true
+
     - name: Build & Invoke Function
       run: |
-        # series of commands to build & invoke the Function (with specifics per language)
-        # Might change this to <one "run" per language> scenario because then
-        # I would just need to check the matrix language for which one to run
-        # and the number of supported languages is very stable. This would
-        # invoke an action for each template. Perhaps an overkill
-
         set -euo pipefail
 
-        builder="pack" # default; sets host dynamically for enabled languages
+        builder="pack"
         language=${{ matrix.language }}
 
         #### DETERMINE IF HOST BUILDER SHOULD BE USED
-        ## NOTE: HOST_ENABLED_LANGUAGES MUST BE UP TO DATE
-        if echo '${{env.HOST_ENABLED_LANGUAGES}}' | jq -r ".[] | select(. == \"${{matrix.language}}\")" | grep -q .; then
+        if echo '${{ env.HOST_ENABLED_LANGUAGES }}' | jq -r ".[] | select(. == \"${{ matrix.language }}\")" | grep -q .; then
           builder="host"
         fi
 
         echo "Using language '$language'"
         echo "Using builder '$builder'"
 
-        # This takes the array of paths, wraps it in single quotes for jq, then
-        # selects only the value that matches with language to get current
-        # language AND its full path (where the func template is)
-        language_path=$(echo '${{env.language_paths}}' | jq -r ".[] | select(contains(\"${{matrix.language}}\"))")
+        # Get the absolute path for this language's templates
+        language_path=$(echo '${{ env.language_paths }}' | jq -r ".[] | select(contains(\"${{ matrix.language }}\"))")
         echo ">> language_path=$language_path"
 
-        ## use the Pull request environment so that the changes are included in testing
+        # Use the PR branch (or main) so func create picks up the changes being tested
         url="https://github.com/functions-dev/templates#${{ env.HEADREF }}"
         echo ">> url=$url"
 
         WORKDIR=$(mktemp -d)
 
-        # see current state of dir
-        echo "ls -la ${GITHUB_WORKSPACE}"
-        ls -la ${GITHUB_WORKSPACE}
-
-        # RUN FOR EACH TEMPLATE
         for template_dir_abs in $(ls -d $language_path*/); do
-          cd $WORKDIR # cd to root for each template to not create embedded dirs
+          cd $WORKDIR
           echo "template_dir_abs=$template_dir_abs"
           template=$(basename "$template_dir_abs")
 
-          ############################# FUNC CREATE #############################
           echo ">>> FUNC CREATE <<<"
-
           echo "f create $language-$template -r=$url -l=$language -t=$template"
           f create $language-$template -r "$url" -l "$language" -t "$template"
 
           echo "cd $language-$template"
           cd $language-$template
 
-          ############################## PRE-REQS ##############################
           echo "> PREREQS (if any)"
-          ### language & template specific prerequisites
+          ### Language & template specific prerequisites
           if [ ${{ matrix.language }} == "go" ] && [ "$template" == "blog" ];then
             make
           elif [ ${{ matrix.language }} == "typescript" ];then
@@ -130,7 +103,6 @@ jobs:
             cargo build
           fi
 
-          ########################## FUNC BUILD & RUN ##########################
           echo ">>> FUNC BUILD <<<"
           echo "FUNC_REGISTRY=quay.io/dfridric f build --builder=$builder"
           FUNC_REGISTRY=quay.io/dfridric f build --builder=$builder
@@ -146,9 +118,8 @@ jobs:
             echo "Failed to start 'func run'. Exiting"
             exit 1
           fi
-          # wait for run just in case
           sleep 10
-          ############################# FUNC INVOKE #############################
+
           echo "> FUNC INVOKE"
           MAX_RETRIES=5
           RETRY_COUNT=0
@@ -169,7 +140,6 @@ jobs:
           kill $RUN_PID
           if [ "$SUCCESS" = true ]; then
             echo "all good"
-
           else
             echo "'func invoke' failed."
             exit 1

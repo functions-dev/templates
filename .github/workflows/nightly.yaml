@@ -1,0 +1,23 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # every day at 10:00 UTC
+  push:
+    branches: [main]
+    paths-ignore: ['.github/**']
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore: ['.github/**']
+  workflow_dispatch:
+
+jobs:
+  invoke:
+    uses: ./.github/workflows/_invoke.yaml
+    with:
+      func-version: 'nightly'
+
+  e2e:
+    uses: ./.github/workflows/_e2e.yaml
+    with:
+      func-version: 'nightly'

@@ -1,12 +1,19 @@
 name: E2E Tests
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      func-version:
+        required: true
+        type: string
+      # Empty = run all e2e tests, or specify one (e.g. "python/keycloak-auth")
+      tests:
+        required: false
+        type: string
+        default: ''
 
 jobs:
-  discover:
+  resolve:
     runs-on: ubuntu-latest
     outputs:
       tests: ${{ steps.find-tests.outputs.tests }}
@@ -14,40 +21,19 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
     - name: Find e2e tests to run
       id: find-tests
       run: |
-        # Get changed files vs base branch
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          git fetch origin ${{ github.base_ref }} --depth=1
-          changed=$(git diff --name-only FETCH_HEAD...HEAD)
+        if [ -n "${{ inputs.tests }}" ]; then
+          matched="${{ inputs.tests }}"
         else
-          # workflow_dispatch: run all
-          changed="RUN_ALL"
+          matched=$(find .testing -mindepth 3 -maxdepth 3 -name "test.sh" | while read -r f; do
+            rel="${f#.testing/}"
+            dirname "$rel"
+          done | sort)
         fi
 
-        # Collect all available e2e tests
-        all_tests=$(find .testing -mindepth 3 -maxdepth 3 -name "test.sh" | while read -r f; do
-          rel="${f#.testing/}"
-          dirname "$rel"
-        done | sort)
-
-        if [ "$changed" = "RUN_ALL" ]; then
-          matched="$all_tests"
-        else
-          matched=""
-          for test in $all_tests; do
-            # Check if any changed file is under the template dir or the test dir
-            if echo "$changed" | grep -qE "^${test}/|^\.testing/${test}/"; then
-              matched="$matched $test"
-            fi
-          done
-        fi
-
-        # Build JSON array
         if [ -n "$matched" ]; then
           json=$(echo "$matched" | xargs -n1 | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "tests=$json" >> $GITHUB_OUTPUT
@@ -56,12 +42,12 @@ jobs:
         else
           echo "tests=[]" >> $GITHUB_OUTPUT
           echo "has_tests=false" >> $GITHUB_OUTPUT
-          echo "No e2e tests to run"
+          echo "No e2e tests found"
         fi
 
   e2e:
-    needs: discover
-    if: needs.discover.outputs.has_tests == 'true'
+    needs: resolve
+    if: needs.resolve.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -74,14 +60,13 @@ jobs:
     - name: Install func
       uses: functions-dev/action@main
       with:
-        version: 'latest'
+        version: ${{ inputs.func-version }}
         name: func
 
     - name: Setup Ollama
       run: |
         curl -fsSL https://ollama.com/install.sh | sh
         ollama serve &
-        # Wait for server
         for i in $(seq 1 30); do
           curl -sf http://localhost:11434/api/tags && break
           sleep 2

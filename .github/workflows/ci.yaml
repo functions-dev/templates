@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['.github/**']
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore: ['.github/**']
+  workflow_dispatch:
+    inputs:
+      func-version:
+        description: 'func CLI version'
+        type: string
+        default: 'latest'
+      e2e-tests:
+        description: 'Blank = run all, or a specific test (e.g. python/keycloak-auth)'
+        type: string
+        default: ''
+
+jobs:
+  invoke:
+    uses: ./.github/workflows/_invoke.yaml
+    with:
+      func-version: ${{ inputs.func-version || 'latest' }}
+
+  e2e:
+    uses: ./.github/workflows/_e2e.yaml
+    with:
+      func-version: ${{ inputs.func-version || 'latest' }}
+      tests: ${{ inputs.e2e-tests || '' }}
