@@ -5,9 +5,9 @@ START_TIME := $(shell date +%s%3N)
 
 # Skipped templates:
 #   go/blog — Hugo theme is a broken submodule, func create doesn't fetch submodules
-#   python/llamacpp, mcp, mcp-ollama, mcp-ollama-rag, ollama-client — need external services or have broken tests
+#   python/mcp, mcp-ollama-rag — need external services (Ollama)
 GO_SKIP := blog
-PYTHON_SKIP := llamacpp mcp mcp-ollama mcp-ollama-rag ollama-client
+PYTHON_SKIP := mcp mcp-ollama-rag
 
 # Run tests for each template in a language directory.
 # For each template: check skip list, run test command, print colored result with timing.
