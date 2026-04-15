@@ -1,2 +1,0 @@
-build:
-  base-image: quay.io/dfridric/custom_llamacpp_base
