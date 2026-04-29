@@ -1,6 +1,7 @@
 name: Test Templates
 
 on:
+  workflow_call:
   pull_request:
     types:
       - opened

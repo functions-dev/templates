@@ -1,4 +1,4 @@
-name: Nightly
+name: func nightly
 
 on:
   schedule:
@@ -20,3 +20,6 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       func-version: 'nightly'
+
+  test:
+    uses: ./.github/workflows/test-templates.yaml

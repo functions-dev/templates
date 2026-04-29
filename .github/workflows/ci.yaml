@@ -1,4 +1,4 @@
-name: CI
+name: func latest
 
 on:
   push:
