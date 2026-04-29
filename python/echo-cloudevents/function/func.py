@@ -1,6 +1,6 @@
 # Function
 import logging
-from cloudevents.http import CloudEvent
+from cloudevents.v1.http import CloudEvent
 
 
 def new():

@@ -10,7 +10,7 @@ poetry run python -m unittest discover
 import json
 import asyncio
 import pytest
-from cloudevents.http import CloudEvent
+from cloudevents.v1.http import CloudEvent
 from function import new
 
 
