@@ -48,6 +48,7 @@ Python-specific:
 | `python/pdf-processing` | PDF operations (extract text, metadata, split, merge) via HTTP. |
 | `python/mcp` | MCP server exposing basic tools (hello, add_numbers) via Model Context Protocol. |
 | `python/mcp-ollama-rag` | RAG via MCP — combines Ollama with Chroma vector DB for document Q&A. Needs Ollama. |
+| `python/sqlite` | REST API backed by SQLite. CRUD on tables with zero external dependencies. |
 | `python/keycloak-auth` | Validates Keycloak JWT Bearer tokens via OIDC/JWKS. Protects endpoints with auth. |
 
 For contributing to this repo, see [CONTRIBUTING.md](CONTRIBUTING.md).
